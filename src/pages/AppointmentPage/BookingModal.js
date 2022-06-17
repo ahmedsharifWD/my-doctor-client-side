@@ -1,17 +1,48 @@
 import { format } from 'date-fns';
 import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { toast } from 'react-toastify';
 import auth from '../../firebase.init';
 
 const BookingModal = ({ date, treatment, setTreatment }) => {
     const { _id, name, slots } = treatment;
     const [user, loading] = useAuthState(auth);
+    const formatDate = format(date, 'PP');
 
     const handleSubmit = event => {
         event.preventDefault();
         const slot = event.target.slot.value;
-        console.log(_id, slot, name,);
-        setTreatment(null)
+
+        // booking has catch every input values. also, when you click on (BOOK APPOINTMENT) then we will post on server side.
+        const booking = {
+            treatmentId: _id,
+            treatment: name,
+            formatDate,
+            slot,
+            patient: user?.email,
+            phone: event.target.phone.value
+        }
+
+        fetch('http://localhost:5000/booking', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(booking)
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                if (data.success) {
+                    toast(`Thank you for booking appointment ${formatDate} at ${slot}`);
+                }
+                else {
+                    toast.error(`Already has booked ${date.booking?.formatDate} at ${date.booking?.slot}`);
+                }
+                // to close modal
+                setTreatment(null)
+            })
+
     }
 
     return (
